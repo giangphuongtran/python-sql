@@ -1,12 +1,13 @@
+from __future__ import annotations
+
 import sqlite3
 from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
 
-
 def _load_bars(db_path: Optional[str] = None) -> pd.DataFrame:
-    path = db_path
+    path = db_path or "sql.db"
     with sqlite3.connect(path) as conn:
         df = pd.read_sql(
             "SELECT ticker, date, open, high, low, close, volume FROM daily_bars",
@@ -15,8 +16,13 @@ def _load_bars(db_path: Optional[str] = None) -> pd.DataFrame:
         )
     if df.empty:
         raise ValueError("No data found in daily_bars table. Run fetch_data.py first.")
-    return df.sort_values(["ticker", "date"])
+    df = df.sort_values(["ticker", "date"]).reset_index(drop=True)
 
+    # enforce numeric types
+    for c in ["open", "high", "low", "close", "volume"]:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    return df
 
 def _rsi(series: pd.Series, window: int = 14) -> pd.Series:
     delta = series.diff()
@@ -63,7 +69,8 @@ def _macd_hist(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9
 def _stoch_k(close: pd.Series, high: pd.Series, low: pd.Series, window: int = 14) -> pd.Series:
     lowest_low = low.rolling(window).min()
     highest_high = high.rolling(window).max()
-    return 100 * (close - lowest_low) / (highest_high - lowest_low)
+    denom = (highest_high - lowest_low).replace(0, np.nan)
+    return 100 * (close - lowest_low) / denom
 
 
 def _drawdown(returns: pd.Series) -> pd.Series:
@@ -76,106 +83,93 @@ def _drawdown(returns: pd.Series) -> pd.Series:
 def compute_technical_indicators(data: pd.DataFrame) -> pd.DataFrame:
     """
     Compute technical indicators for a single ticker's data.
-    
-    Args:
-        data: DataFrame with columns: date, open, high, low, close, volume
-        
-    Returns:
-        DataFrame with original data plus indicator columns: RSI, ATR, ADX, MACD_Hist, 
-        Stoch_K, SMA20, SMA60, SMA200, BB_Upper, BB_Lower, Volume
-    """
-    df = data.copy().sort_values('date')
-    close = df['close']
-    high = df['high']
-    low = df['low']
-    volume = df['volume']
-    
-    indicators = {}
-    
-    # RSI
-    indicators['RSI'] = _rsi(close, window=14)
-    
-    # ATR
-    indicators['ATR'] = _atr(high, low, close, window=14)
-    
-    # ADX
-    indicators['ADX'] = _adx(high, low, close, window=14)
-    
-    # MACD Histogram
-    indicators['MACD_Hist'] = _macd_hist(close)
-    
-    # Stochastic K
-    indicators['Stoch_K'] = _stoch_k(close, high, low, window=14)
-    
-    # Simple Moving Averages
-    indicators['SMA20'] = close.rolling(20).mean()
-    indicators['SMA60'] = close.rolling(60).mean()
-    indicators['SMA200'] = close.rolling(200).mean()
-    
-    # Bollinger Bands
-    bb_mid = close.rolling(20).mean()
-    bb_std = close.rolling(20).std()
-    indicators['BB_Upper'] = bb_mid + 2 * bb_std
-    indicators['BB_Lower'] = bb_mid - 2 * bb_std
-    
-    # Volume (already in data, but included for consistency)
-    indicators['Volume'] = volume
-    
-    result = pd.DataFrame(indicators, index=df.index)
-    return pd.concat([df, result], axis=1)
 
+    Input columns required: date, open, high, low, close, volume
+    Output: original columns + indicator columns:
+      RSI, ATR, ADX, MACD_Hist, Stoch_K, SMA20, SMA60, SMA200, BB_Upper, BB_Lower, Volume
+    """
+    df = data.copy().sort_values("date").reset_index(drop=True)
+
+    close = df["close"]
+    high = df["high"]
+    low = df["low"]
+    volume = df["volume"]
+
+    # RSI
+    df["RSI"] = _rsi(close, window=14)
+
+    # ATR
+    df["ATR"] = _atr(high, low, close, window=14)
+
+    # ADX
+    df["ADX"] = _adx(high, low, close, window=14)
+
+    # MACD Histogram
+    df["MACD_Hist"] = _macd_hist(close)
+
+    # Stochastic K
+    df["Stoch_K"] = _stoch_k(close, high, low, window=14)
+
+    # SMAs
+    df["SMA20"] = close.rolling(20).mean()
+    df["SMA60"] = close.rolling(60).mean()
+    df["SMA200"] = close.rolling(200).mean()
+
+    # Bollinger Bands (20, 2-sigma)
+    bb_mid = df["SMA20"]
+    bb_std = close.rolling(20).std()
+    df["BB_Upper"] = bb_mid + 2 * bb_std
+    df["BB_Lower"] = bb_mid - 2 * bb_std
+
+    # Volume
+    df["Volume"] = volume
+
+    return df
 
 def compute_features(db_path: Optional[str] = None) -> pd.DataFrame:
     """
-    Compute all requested feature groups for clustering.
-    Returns a DataFrame indexed by ticker with feature columns.
+    Compute all feature groups for clustering.
     """
     bars = _load_bars(db_path)
-    closes = bars.pivot(index="date", columns="ticker", values="close").sort_index()
-    highs = bars.pivot(index="date", columns="ticker", values="high").sort_index()
-    lows = bars.pivot(index="date", columns="ticker", values="low").sort_index()
-    opens = bars.pivot(index="date", columns="ticker", values="open").sort_index()
-    volumes = bars.pivot(index="date", columns="ticker", values="volume").sort_index()
 
+    # For market return
+    closes = bars.pivot(index="date", columns="ticker", values="close").sort_index()
     returns = closes.pct_change()
     market_returns = returns.mean(axis=1)
 
     features: Dict[str, Dict[str, float]] = {}
 
-    for ticker in closes.columns:
-        price = closes[ticker]
-        high = highs[ticker]
-        low = lows[ticker]
-        vol = volumes[ticker]
-        ret = returns[ticker]
-        mkt = market_returns
+    for ticker, g in bars.groupby("ticker", sort=True):
+        g = g.sort_values("date").reset_index(drop=True)
+
+        price = g["close"]
+        high = g["high"]
+        low = g["low"]
+        vol = g["volume"]
 
         if price.dropna().shape[0] < 60:
-            # not enough data
             continue
 
-        sma20 = price.rolling(20).mean()
-        sma60 = price.rolling(60).mean()
-        sma200 = price.rolling(200).mean()
+        # 1) compute indicators
+        gi = compute_technical_indicators(g)
 
-        momentum_20d = price / price.shift(20) - 1
+        # 2) derived time-series used for aggregation
+        ret = gi["close"].pct_change()
+        mkt = market_returns.reindex(gi["date"]).reset_index(drop=True)
 
+        # Momentum and rolling stats
+        momentum_20d = gi["close"] / gi["close"].shift(20) - 1
         sharpe_20d = ret.rolling(20).mean() / ret.rolling(20).std()
-        beta_global = ret.cov(mkt) / mkt.var() if mkt.var() and not np.isnan(mkt.var()) else np.nan
+
+        # beta against market
+        mkt_var = mkt.var()
+        beta_global = ret.cov(mkt) / mkt_var if (mkt_var and not np.isnan(mkt_var)) else np.nan
 
         std20 = ret.rolling(20).std()
         std60 = ret.rolling(60).std()
-        atr14 = _atr(high, low, price, window=14)
-        adx14 = _adx(high, low, price, window=14)
-        rsi14 = _rsi(price, window=14)
-        macd_hist = _macd_hist(price)
-        stoch_k = _stoch_k(price, high, low, window=14)
 
-        bb_mid = sma20
-        bb_std = price.rolling(20).std()
-        bb_upper = bb_mid + 2 * bb_std
-        bb_lower = bb_mid - 2 * bb_std
-        bb_width = (bb_upper - bb_lower) / bb_mid
+        # Bollinger width (reuse BB_Upper and BB_Lower from compute_technical_indicators)
+        bb_width = (gi["BB_Upper"] - gi["BB_Lower"]) / gi["SMA20"]
 
         # risk/return
         mean_daily_return = ret.mean()
@@ -185,25 +179,25 @@ def compute_features(db_path: Optional[str] = None) -> pd.DataFrame:
 
         # momentum
         mean_momentum_20d = momentum_20d.mean()
-        mean_close_vs_sma200 = (price / sma200 - 1).mean()
-        mean_adx_14 = adx14.mean()
-        mean_price_pos_20 = (price > sma20).mean()
+        mean_close_vs_sma200 = (gi["close"] / gi["SMA200"] - 1).mean()
+        mean_adx_14 = gi["ADX"].mean()
+        mean_price_pos_20 = (gi["close"] > gi["SMA20"]).mean()
 
         # volatility
         mean_volatility_20d = std20.mean()
-        mean_atr_14 = atr14.mean()
+        mean_atr_14 = gi["ATR"].mean()
         mean_volatility_ratio = (std20 / std60).replace([np.inf, -np.inf], np.nan).mean()
         mean_bb_width = bb_width.replace([np.inf, -np.inf], np.nan).mean()
 
         # volume/liquidity
-        dollar_vol = price * vol
+        dollar_vol = gi["close"] * gi["volume"]
         mean_liquidity_20d = dollar_vol.rolling(20).mean().mean()
-        mean_volume_ratio = (vol / vol.rolling(60).mean()).replace([np.inf, -np.inf], np.nan).mean()
+        mean_volume_ratio = (gi["volume"] / gi["volume"].rolling(60).mean()).replace([np.inf, -np.inf], np.nan).mean()
 
         # technical
-        mean_rsi_14 = rsi14.mean()
-        mean_macd_hist = macd_hist.mean()
-        mean_stoch_k = stoch_k.mean()
+        mean_rsi_14 = gi["RSI"].mean()
+        mean_macd_hist = gi["MACD_Hist"].mean()
+        mean_stoch_k = gi["Stoch_K"].mean()
 
         # distributional
         return_skewness = ret.skew()
@@ -231,5 +225,15 @@ def compute_features(db_path: Optional[str] = None) -> pd.DataFrame:
             "return_skewness": return_skewness,
             "return_kurtosis": return_kurtosis,
         }
+    if not features:
+        return pd.DataFrame()
 
-    return pd.DataFrame.from_dict(features, orient="index").dropna(how="all")
+    df = pd.DataFrame.from_dict(features, orient="index").dropna(how="all")
+    
+    # Remove zero-variance columns
+    variances = df.var(axis=0, ddof=1)
+    zero_var_cols = variances[variances == 0].index.tolist()
+    if zero_var_cols:
+        df = df.drop(columns=zero_var_cols)
+        
+    return df

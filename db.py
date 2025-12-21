@@ -3,8 +3,6 @@ import sqlite3
 from contextlib import contextmanager
 from typing import Iterable, Mapping, Optional
 
-
-
 @contextmanager
 def get_conn(db_path: Optional[str] = None):
     """
