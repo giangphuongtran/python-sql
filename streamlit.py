@@ -148,14 +148,14 @@ def load_raw_bars(db_path: str):
 def get_indicator_description(indicator: str) -> str:
     """Get description for a technical indicator."""
     descriptions = {
-        'RSI': "**RSI (Relative Strength Index)**: Momentum oscillator (0-100) measuring speed/magnitude of price changes."
-               "Calculated as: 100 - (100 / (1 + RS)), where RS = average gain / average loss over 14 periods."
+        'RSI': "**RSI (Relative Strength Index)**: Momentum oscillator (0-100) measuring speed/magnitude of price changes. "
+               "Calculated as: 100 - (100 / (1 + RS)), where RS = average gain / average loss over 14 periods. "
                "Used to identify overbought (>70) or oversold (<30) conditions.",
-        'ATR': "**ATR (Average True Range)**: Volatility measure indicating average trading range."
-               "Calculated as 14-period moving average of True Range (max of high-low, |high-prev_close|, |low-prev_close|)."
+        'ATR': "**ATR (Average True Range)**: Volatility measure indicating average trading range. "
+               "Calculated as 14-period moving average of True Range (max of high-low, |high-prev_close|, |low-prev_close|). "
                "Used to assess market volatility and set stop-loss levels.",
-        'ADX': "**ADX (Average Directional Index)**: Trend strength indicator (0-100)."
-               "Based on comparison of upward vs downward price movement relative to True Range."
+        'ADX': "**ADX (Average Directional Index)**: Trend strength indicator (0-100). "
+               "Based on comparison of upward vs downward price movement relative to True Range. "
                "Higher values (>25) indicate stronger trends; used to confirm trend direction.",
         'MACD_Hist': "**MACD Histogram**: Momentum indicator showing difference between MACD line and signal line. "
                     "MACD = 12-period EMA - 26-period EMA; Signal = 9-period EMA of MACD. "
@@ -180,18 +180,16 @@ def get_indicator_description(indicator: str) -> str:
         
 def candlestick_chart(ticker_data: pd.DataFrame, ticker: str, selected_indicators: list):
     """Create candlestick chart with selected technical indicators using subplots for RSI, MACD, ADX, Stoch_K, and Volume."""
-    # Indicators with 0-100 scale or different units need separate subplots
     has_rsi = 'RSI' in selected_indicators and 'RSI' in ticker_data.columns
     has_macd = 'MACD_Hist' in selected_indicators and 'MACD_Hist' in ticker_data.columns
     has_stoch = 'Stoch_K' in selected_indicators and 'Stoch_K' in ticker_data.columns
     has_adx = 'ADX' in selected_indicators and 'ADX' in ticker_data.columns
     has_volume = 'Volume' in ticker_data.columns
     
-    n_subplots = 1  # Main price chart
+    n_subplots = 1
     row_heights = []
     subplot_titles = [f"{ticker} Price Chart"]
     
-    # Determine row assignments (order: Price, RSI, MACD, ADX, Stoch_K, Volume)
     row_assignments = {'price': 1}
     current_row = 2
     
@@ -228,7 +226,6 @@ def candlestick_chart(ticker_data: pd.DataFrame, ticker: str, selected_indicator
     main_height = 1.0 - sum(row_heights) if row_heights else 0.5
     row_heights = [main_height] + row_heights
     
-    # Create subplots
     fig = make_subplots(
         rows=n_subplots, 
         cols=1,
@@ -250,7 +247,6 @@ def candlestick_chart(ticker_data: pd.DataFrame, ticker: str, selected_indicator
         row=row_assignments['price'], col=1
     )
     
-    # Add overlay indicators on price chart (SMAs, Bollinger Bands, ATR)
     price_row = row_assignments['price']
     if 'SMA20' in selected_indicators and 'SMA20' in ticker_data.columns:
         fig.add_trace(
@@ -294,7 +290,6 @@ def candlestick_chart(ticker_data: pd.DataFrame, ticker: str, selected_indicator
                       name='RSI', line=dict(color='orange', width=1)),
             row=row_assignments['rsi'], col=1
         )
-        # Add RSI reference lines (70 overbought, 30 oversold)
         fig.add_hline(y=70, line_dash="dash", line_color="red", opacity=0.5, row=row_assignments['rsi'], col=1)
         fig.add_hline(y=30, line_dash="dash", line_color="green", opacity=0.5, row=row_assignments['rsi'], col=1)
         fig.update_yaxes(title_text="RSI (0-100)", range=[0, 100], row=row_assignments['rsi'], col=1)
@@ -312,7 +307,6 @@ def candlestick_chart(ticker_data: pd.DataFrame, ticker: str, selected_indicator
                       name='ADX', line=dict(color='brown', width=1)),
             row=row_assignments['adx'], col=1
         )
-        # Add ADX reference lines (25 strong trend, 50 very strong trend)
         fig.add_hline(y=25, line_dash="dash", line_color="green", opacity=0.5, row=row_assignments['adx'], col=1)
         fig.add_hline(y=50, line_dash="dash", line_color="red", opacity=0.5, row=row_assignments['adx'], col=1)
         fig.update_yaxes(title_text="ADX (0-100)", range=[0, 100], row=row_assignments['adx'], col=1)
@@ -322,11 +316,9 @@ def candlestick_chart(ticker_data: pd.DataFrame, ticker: str, selected_indicator
                       name='Stoch_K', line=dict(color='green', width=1)),
             row=row_assignments['stoch'], col=1
         )
-        # Add Stochastic K reference lines (80 overbought, 20 oversold)
         fig.add_hline(y=80, line_dash="dash", line_color="red", opacity=0.5, row=row_assignments['stoch'], col=1)
         fig.add_hline(y=20, line_dash="dash", line_color="green", opacity=0.5, row=row_assignments['stoch'], col=1)
         fig.update_yaxes(title_text="Stoch_K (0-100)", range=[0, 100], row=row_assignments['stoch'], col=1)
-    # Volume subplot
     if has_volume:
         fig.add_trace(
             go.Bar(x=ticker_data['date'], y=ticker_data['Volume'], 
@@ -341,7 +333,6 @@ def candlestick_chart(ticker_data: pd.DataFrame, ticker: str, selected_indicator
             tickformat=',.0f'
         )
     
-    # Update layout
     fig.update_layout(
         title=f"{ticker} Price Chart with Technical Indicators",
         height=600 + (150 * (n_subplots - 1)),
@@ -361,7 +352,6 @@ def main():
     if 'current_tab' not in st.session_state:
         st.session_state.current_tab = "Overview"
     
-    # Dataset Overview Section
     st.header("Dataset Overview")
     st.write("""
     The dataset contains daily stock price data (open, high, low, close, volume) for 50 major US stocks 
@@ -373,7 +363,6 @@ def main():
     **Datasource**: Data is fetched from Polygon.io API and stored in a local SQLite database.
     """)
     
-    # Research Question
     st.header("Objective")
     st.write("""
     Cluster stocks based on their risk and return characteristics to identify groups of stocks with similar 
@@ -396,12 +385,10 @@ def main():
         st.error(f"Error loading data: {str(e)}")
         return
     
-    # Sidebar controls
     st.sidebar.header("Clustering Parameters")
     n_cluster = st.sidebar.slider("Number of clusters", min_value=2, max_value=10, value=4, step=1)
     cluster_method = st.sidebar.selectbox("Clustering method", options=["KMeans", "PAM", "Hierarchical"], index=0, key="method_select")  
     
-    # Technical indicator options for visualization
     indicator_options = ['RSI', 'ATR', 'ADX', 'MACD_Hist', 'Stoch_K', 'SMA20', 'SMA60', 'SMA200', 'BB_Upper', 'BB_Lower']
     st.sidebar.header("Technical Indicators for Charts")
     selected_indicators = st.sidebar.multiselect(
@@ -432,13 +419,11 @@ def main():
                 "which is essential for clustering algorithms.")
         st.dataframe(features_scaled.head(5))
         
-        # Technical Indicator Descriptions
         if selected_indicators:
             st.subheader("Technical Indicator Descriptions")
             for indicator in selected_indicators:
                 st.markdown(get_indicator_description(indicator))
         
-        # Candlestick Chart with Indicators
         if not price_df.empty:
             st.subheader("Candlestick Chart with Technical Indicators")
             tick = st.selectbox("Select ticker", options=price_df['ticker'].unique(), key="ticker_select")
@@ -527,11 +512,9 @@ def main():
         The scree plot shows the variance explained by each component, and the cumulative plot 
         shows how much variance is captured as we add more components.
         
-        **Conclusion**: We use 3 principal components for clustering visualization, which captures 
-        approximately 67% of the variance while maintaining interpretability.
+        **Conclusion**: We use 3 principal components for clustering visualization, which captures nearly 70% of the variance while maintaining interpretability.
         """)
         
-        # Perform PCA with all components
         pca_full = PCA()
         pca_full.fit(features_scaled)
         
@@ -539,13 +522,11 @@ def main():
         explained_var = pca_full.explained_variance_ratio_[:n_components] * 100
         cumulative_var = np.cumsum(explained_var)
         
-        # Create combined scree and cumulative variance plot
         fig_pca_analysis = make_subplots(
             rows=1, cols=1,
             specs=[[{"secondary_y": True}]]
         )
         
-        # Scree plot (bars)
         fig_pca_analysis.add_trace(
             go.Bar(
                 x=list(range(1, n_components + 1)),
@@ -558,7 +539,6 @@ def main():
             secondary_y=False
         )
         
-        # Cumulative variance (line)
         fig_pca_analysis.add_trace(
             go.Scatter(
                 x=list(range(1, n_components + 1)),
@@ -573,12 +553,11 @@ def main():
             secondary_y=True
         )
         
-        # Add vertical line at 3 components
         fig_pca_analysis.add_vline(
             x=3, 
             line_dash="dash", 
             line_color="green", 
-            annotation_text="Selected: 3 components",
+            annotation_text="",
             annotation_position="top"
         )
         
@@ -595,15 +574,22 @@ def main():
         )
         
         fig_pca_analysis.update_layout(
-            title="Figure 2: Scree Plot & Cumulative Variance",
+            title="Scree Plot & Cumulative Variance",
             height=500,
             template="plotly_white",
-            showlegend=True
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=-0.25,
+                xanchor="center",
+                x=0.5
+            ),
+            margin=dict(b=80)
         )
         
         st.plotly_chart(fig_pca_analysis, use_container_width=True)
         
-        # Display variance explained table
         pca_summary = pd.DataFrame({
             'Component': range(1, n_components + 1),
             'Variance Explained (%)': explained_var,
@@ -619,13 +605,15 @@ def main():
         cumulative_var = np.cumsum(pca_temp.explained_variance_ratio_)
         n_pca_components = np.where(cumulative_var >= 0.65)[0][0] + 1
         
-        # Use PCA-reduced features for clustering
         clusters_df, metrics, model, linkage_matrix, features_pca_reduced = run_clustering(
             method=cluster_method,
             n_clusters=n_cluster,
             features_scaled=features_scaled,
             n_pca_components=n_pca_components,
         )
+        
+        cluster_colors = px.colors.qualitative.Set1[:n_cluster]
+        cluster_color_map = {str(i+1): cluster_colors[i] for i in range(n_cluster)}
         
         st.subheader("Clustering Quality Metrics")
         col1, col2, col3 = st.columns(3)
@@ -648,7 +636,6 @@ def main():
                 help="Higher is better. Ratio of between-cluster dispersion to within-cluster dispersion."
             )
         
-        # Dendrogram for Hierarchical Clustering
         if cluster_method == "Hierarchical" and linkage_matrix is not None:
             st.subheader("Dendrogram")
             st.write("The dendrogram shows the hierarchical clustering structure.")
@@ -671,10 +658,8 @@ def main():
             
             fig_dendro = go.Figure()
             
-            # Convert matplotlib colors to plotly-compatible colors
             def convert_matplotlib_color(color):
                 """Convert matplotlib color codes (like 'C1', 'C2') to valid plotly colors."""
-                # Map common matplotlib color codes
                 color_map = {
                     'C0': '#1f77b4',  # blue
                     'C1': '#ff7f0e',  # orange
@@ -685,19 +670,16 @@ def main():
                     'C6': '#e377c2',  # pink
                     'C7': '#7f7f7f',  # gray
                     'C8': '#bcbd22',  # olive
-                    'C9': '#17becf',  # cyan
+                    'C9': '#17becf',
                 }
                 if color in color_map:
                     return color_map[color]
-                # Try to convert using matplotlib
                 try:
                     rgb = mcolors.to_rgb(color)
                     return f'rgb({int(rgb[0]*255)}, {int(rgb[1]*255)}, {int(rgb[2]*255)})'
                 except:
-                    # Default to gray if conversion fails
                     return 'gray'
             
-            # Plot dendrogram segments
             for xs, ys, color in zip(icoord, dcoord, color_list):
                 plotly_color = convert_matplotlib_color(color)
                 fig_dendro.add_trace(
@@ -721,12 +703,12 @@ def main():
                     tickvals=leaf_positions,
                     ticktext=ivl,
                     tickangle=90,
-                    tickfont=dict(size=8)  # Smaller font for better fit
+                    tickfont=dict(size=8)
                 ),
                 xaxis_title="Stocks",
                 yaxis_title="Distance",
                 showlegend=False,
-                margin=dict(b=100)  # Extra bottom margin for rotated labels
+                margin=dict(b=100)
             )
             st.plotly_chart(fig_dendro, use_container_width=True)
         
@@ -738,13 +720,14 @@ def main():
             x=cluster_counts['Cluster'].astype(str),
             y=cluster_counts['Number of Stocks'],
             labels={'x': 'Cluster', 'y': 'Number of Stocks'},
-            title="Stocks per Cluster"
+            title="Stocks per Cluster",
+            color=cluster_counts['Cluster'].astype(str),
+            color_discrete_map=cluster_color_map
         )
-        fig_counts.update_layout(template="plotly_white", height=400)
+        fig_counts.update_layout(template="plotly_white", height=400, showlegend=False)
         st.plotly_chart(fig_counts, use_container_width=True)
         st.dataframe(cluster_counts.set_index('Cluster'))
         
-        # Silhouette Analysis
         st.subheader(f"Silhouette Analysis: {cluster_method}")
         st.write(f"""
         **Average Silhouette Width**: {metrics['silhouette']:.2f}
@@ -755,19 +738,17 @@ def main():
         - **Negative values**: Stock may be assigned to the wrong cluster
         """)
         
-        # Create silhouette plot
         silhouette_df = clusters_df.sort_values(['Cluster', 'Silhouette_Width'], ascending=[True, False])
         
         fig_sil = go.Figure()
         
         y_pos = 0
-        colors = px.colors.qualitative.Set3
-        for i, cluster in enumerate(sorted(silhouette_df['Cluster'].unique())):
+        for cluster in sorted(silhouette_df['Cluster'].unique()):
             cluster_data = silhouette_df[silhouette_df['Cluster'] == cluster]
             cluster_data = cluster_data.sort_values('Silhouette_Width', ascending=True)
             
             y_positions = list(range(y_pos, y_pos + len(cluster_data)))
-            y_pos += len(cluster_data) + 1  # Add gap between clusters
+            y_pos += len(cluster_data) + 1
             
             fig_sil.add_trace(
                 go.Bar(
@@ -775,7 +756,7 @@ def main():
                     y=y_positions,
                     orientation='h',
                     name=f'Cluster {cluster}',
-                    marker_color=colors[i % len(colors)],
+                    marker_color=cluster_color_map[str(cluster)],
                     text=cluster_data['Ticker'],
                     textposition='outside',
                     hovertemplate='<b>%{text}</b><br>' +
@@ -784,7 +765,6 @@ def main():
                 )
             )
         
-        # Add average line
         fig_sil.add_vline(
             x=metrics['silhouette'],
             line_dash="dash",
@@ -793,13 +773,12 @@ def main():
             annotation_position="top"
         )
         
-        # Highlight negative values
         negative_stocks = silhouette_df[silhouette_df['Silhouette_Width'] < 0]
         if len(negative_stocks) > 0:
             st.warning(f"⚠️ {len(negative_stocks)} stock(s) have negative silhouette scores (poorly clustered): {', '.join(negative_stocks['Ticker'].tolist())}")
         
         fig_sil.update_layout(
-            title=f"Figure 10: Silhouette Analysis: {cluster_method} (Average: {metrics['silhouette']:.2f})",
+            title=f"Silhouette Analysis: {cluster_method} (Average: {metrics['silhouette']:.2f})",
             xaxis_title="Silhouette width Si",
             yaxis_title="",
             template="plotly_white",
@@ -809,15 +788,13 @@ def main():
         )
         st.plotly_chart(fig_sil, use_container_width=True)
         
-        # Display stocks with negative silhouette
         if len(negative_stocks) > 0:
             st.subheader("Stocks with Negative Silhouette Scores")
             st.dataframe(negative_stocks[['Ticker', 'Cluster', 'Silhouette_Width']].sort_values('Silhouette_Width'))
         
-        # PCA Visualization with 3 components
         st.subheader("Cluster Visualization (PCA with 3 Components)")
         st.write("**PCA (Principal Component Analysis)** projects the high-dimensional feature space onto 2D/3D for visualization. "
-                "Using 3 components captures ~67% of variance. This helps visualize how well-separated the clusters are.")
+                "Using 3 components captures ~70% of variance. This helps visualize how well-separated the clusters are.")
         
         pca = PCA(n_components=0.65, random_state=42)
         pca.fit(features_scaled)
@@ -833,8 +810,6 @@ def main():
             'Silhouette_Width': clusters_df['Silhouette_Width']
         })
         
-        explained_var = pca.explained_variance_ratio_[:2].sum()
-        
         fig_pca = go.Figure()
         
         for cluster in sorted(pca_df['Cluster'].unique()):
@@ -848,7 +823,7 @@ def main():
                     text=cluster_data['Ticker'],
                     textposition='middle right',
                     textfont=dict(size=8),
-                    marker=dict(size=10, opacity=0.7),
+                    marker=dict(size=10, opacity=0.7, color=cluster_color_map[cluster]),
                     hovertemplate='<b>%{text}</b><br>' +
                                   'PC1: %{x:.2f}<br>' +
                                   'PC2: %{y:.2f}<br>' +
@@ -859,7 +834,7 @@ def main():
             )
         
         fig_pca.update_layout(
-            title=f"Figure 7.1: {cluster_method} (Sil: {metrics['silhouette']:.2f})",
+            title=f"{cluster_method} (Sil: {metrics['silhouette']:.2f})",
             template="plotly_white",
             height=600,
             xaxis_title=f"PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)",
@@ -880,7 +855,7 @@ def main():
                     name=f'Cluster {cluster}',
                     text=cluster_data['Ticker'],
                     textposition='middle right',
-                    marker=dict(size=8, opacity=0.7),
+                    marker=dict(size=8, opacity=0.7, color=cluster_color_map[cluster]),
                     hovertemplate='<b>%{text}</b><br>' +
                                 'PC1: %{x:.2f}<br>' +
                                 'PC2: %{y:.2f}<br>' +
@@ -904,19 +879,17 @@ def main():
         clusters_with_features = clusters_df.set_index('Ticker').join(feats, how='left')
         cluster_means = clusters_with_features.groupby('Cluster')[feats.columns].mean()
         
-        # Z-score each feature across clusters (standardize)
         cluster_means_z = cluster_means.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
         
         feature_groups = {
             "Risk/Return": ["mean_daily_return", "mean_stock_vs_market", "beta_global", "mean_sharpe_20d", "worst_drawdown"],
             "Momentum": ["mean_momentum_20d", "mean_close_vs_sma200", "mean_adx_14", "mean_price_pos_20"],
             "Volatility": ["mean_volatility_20d", "mean_atr_14", "mean_volatility_ratio", "mean_bb_width"],
-            "Volume/Liquidity": ["mean_liquidity_20d", "mean_volume_ratio"],
+            "Liquidity": ["mean_liquidity_20d", "mean_volume_ratio"],
             "Technical": ["mean_rsi_14", "mean_macd_hist", "mean_stoch_k"],
-            "Distributional": ["return_skewness", "return_kurtosis"]
+            "Distribution": ["return_skewness", "return_kurtosis"]
         }
         
-        # Visualization choice
         viz_choice = st.radio(
             "Choose visualization:",
             ["Heatmap (Grouped by Feature Categories)", "Radar Charts (One per Cluster)"],
@@ -934,7 +907,6 @@ def main():
             dimensions, supporting the behavioral interpretation of cluster structure.
             """)
             
-            # Create ordered feature list by groups with group labels
             ordered_features = []
             group_labels = []
             group_boundaries = []
@@ -954,7 +926,29 @@ def main():
                 ordered_features.extend(remaining_features)
                 group_boundaries.append(("Other", current_pos, current_pos + len(remaining_features)))
             
-            cluster_means_z_ordered = cluster_means_z[ordered_features]
+            pretty = {
+                    "mean_daily_return": "Mean return",
+                    "mean_stock_vs_market": "Excess return",
+                    "beta_global": "Beta",
+                    "mean_sharpe_20d": "Sharpe(20d)",
+                    "worst_drawdown": "Worst DD",
+                    "mean_momentum_20d": "Momentum(20d)",
+                    "mean_close_vs_sma200": "Price vs SMA200",
+                    "mean_adx_14": "ADX(14)",
+                    "mean_price_pos_20": "% > SMA20",
+                    "mean_volatility_20d": "Vol(20d)",
+                    "mean_atr_14": "ATR(14)",
+                    "mean_volatility_ratio": "Vol(20/60)",
+                    "mean_bb_width": "BB width",
+                    "mean_liquidity_20d": "$Vol(20d)",
+                    "mean_volume_ratio": "Vol ratio",
+                    "mean_rsi_14": "RSI(14)",
+                    "mean_macd_hist": "MACD hist",
+                    "mean_stoch_k": "Stoch %K",
+                    "return_skewness": "Skew",
+                    "return_kurtosis": "Kurtosis",
+                }
+            cluster_means_z_ordered = cluster_means_z[ordered_features].rename(columns=pretty)
             
             fig_heatmap = go.Figure(data=go.Heatmap(
             z=cluster_means_z_ordered.values,
@@ -962,58 +956,59 @@ def main():
             y=[f"Cluster {i}" for i in cluster_means_z_ordered.index],
             colorscale='RdBu',
             zmid=0,
-            text=cluster_means_z_ordered.round(2).values,
-                texttemplate='%{text}',
-                textfont={"size": 9},
-                colorbar=dict(
-                    title="Z-Score",
-                    tickmode="linear",
-                    tick0=-2,
-                    dtick=1
-                ),
-                hovertemplate='Cluster: %{y}<br>Feature: %{x}<br>Z-Score: %{z:.2f}<extra></extra>'
+            zmin=-2,
+            zmax=2,
             ))
-            
-            annotations = []
-            for group_name, start_idx, end_idx in group_boundaries:
+            for gi, (group_name, start_idx, end_idx) in enumerate(group_boundaries):
+                fig_heatmap.add_vrect(
+                    x0=start_idx - 0.5,
+                    x1=end_idx - 0.5,
+                    fillcolor="rgba(0,0,0,0.03)" if gi % 2 == 0 else "rgba(0,0,0,0.00)",
+                    line_width=0,
+                    layer="below",
+                    )
+
                 if start_idx > 0:
                     fig_heatmap.add_vline(
                         x=start_idx - 0.5,
-                        line_dash="dash",
-                        line_color="gray",
-                        line_width=2,
-                        opacity=0.7
+                        line_dash="solid",
+                        line_color="rgba(0,0,0,0.35)",
+                        line_width=3,
                     )
+
+            annotations = []
+            for group_name, start_idx, end_idx in group_boundaries:
                 mid_point = (start_idx + end_idx - 1) / 2
-                annotations.append(dict(
-                    x=mid_point,
-                    y=-0.5,
-                    text=f"<b>{group_name}</b>",
-                    showarrow=False,
-                    xref="x",
-                    yref="paper",
-                    font=dict(size=10, color="black"),
-                    bgcolor="rgba(255,255,255,0.8)",
-                    bordercolor="gray",
-                    borderwidth=1
-                ))
-            
-                fig_heatmap.update_layout(
-                title="Standardized Cluster Means Heatmap (Grouped by Feature Categories)",
-                height=max(400, len(cluster_means_z_ordered) * 100),
+                annotations.append(
+                    dict(
+                        x=mid_point,
+                        y=1.1,
+                        text=f"<b>{group_name}</b>",
+                        showarrow=False,
+                        xref="x",
+                        yref="paper",
+                        font=dict(size=12),
+                        bgcolor="rgba(255,255,255,0.85)",
+                        bordercolor="rgba(0,0,0,0.2)",
+                        borderwidth=1,
+                    )
+                )
+
+            fig_heatmap.update_layout(
+                title="Standardized Cluster Means Heatmap (Z-Scored, Grouped Features)",
                 template="plotly_white",
-                xaxis=dict(
-                    tickangle=45,
-                    tickfont=dict(size=9),
-                    side="bottom"
-                ),
-                yaxis=dict(
-                    tickfont=dict(size=11)
-                ),
-                margin=dict(l=100, r=50, t=80, b=180),
-                annotations=annotations
+                height=520,
+                margin=dict(l=120, r=40, t=130, b=120),
+                annotations=annotations,
             )
-            
+
+            fig_heatmap.update_xaxes(
+                tickangle=35,
+                tickfont=dict(size=10),
+            )
+            fig_heatmap.update_yaxes(
+                tickfont=dict(size=12),
+            )
             st.plotly_chart(fig_heatmap, use_container_width=True)
         
         else:
@@ -1048,7 +1043,7 @@ def main():
                         theta=categories_plot,
                         fill='toself',
                         name=f'Cluster {cluster_num}',
-                        line=dict(color=px.colors.qualitative.Set3[cluster_num % len(px.colors.qualitative.Set3)])
+                        line=dict(color=cluster_color_map[str(cluster_num)])
                     ))
                     
                     fig_radar.update_layout(
@@ -1066,8 +1061,6 @@ def main():
                     
                     st.plotly_chart(fig_radar, use_container_width=True)
         
-        
-        # Comparison Table for All Methods
         st.subheader("Comparison of All Clustering Methods")
         st.write("""
         This table compares all three clustering methods (KMeans, PAM, Hierarchical) using three evaluation metrics:
@@ -1098,7 +1091,6 @@ def main():
         comparison_df['Davies-Bouldin Score (DB)'] = comparison_df['Davies-Bouldin Score (DB)'].round(4)
         comparison_df['Calinski-Harabasz Score (CH)'] = comparison_df['Calinski-Harabasz Score (CH)'].round(2)
         
-        # Display the table
         st.dataframe(comparison_df, use_container_width=True)
         
         best_sil = comparison_df.loc[comparison_df['Silhouette Score (SH)'].idxmax(), 'Method']
@@ -1115,24 +1107,21 @@ def main():
             subplot_titles=('Silhouette Score<br>(Higher is Better)', 
                            'Davies-Bouldin Score<br>(Lower is Better)', 
                            'Calinski-Harabasz Score<br>(Higher is Better)'),
-            vertical_spacing=0.15  # More space for titles
+            vertical_spacing=0.15
         )
         
-        # Silhouette Score
         fig_compare.add_trace(
             go.Bar(x=comparison_df['Method'], y=comparison_df['Silhouette Score (SH)'],
                   name='Silhouette', marker_color='blue'),
             row=1, col=1
         )
         
-        # Davies-Bouldin Score
         fig_compare.add_trace(
             go.Bar(x=comparison_df['Method'], y=comparison_df['Davies-Bouldin Score (DB)'],
                   name='Davies-Bouldin', marker_color='orange'),
             row=1, col=2
         )
         
-        # Calinski-Harabasz Score
         fig_compare.add_trace(
             go.Bar(x=comparison_df['Method'], y=comparison_df['Calinski-Harabasz Score (CH)'],
                   name='Calinski-Harabasz', marker_color='green'),
@@ -1145,7 +1134,7 @@ def main():
         
         for i, method in enumerate(comparison_df['Method']):
             sil_val = comparison_df.loc[comparison_df['Method'] == method, 'Silhouette Score (SH)'].values[0]
-            y_pos_sil = sil_val + max_sil * 0.03  # Small offset above bar
+            y_pos_sil = sil_val + max_sil * 0.03
             fig_compare.add_annotation(
                 x=method,
                 y=y_pos_sil,
@@ -1157,7 +1146,6 @@ def main():
                 borderwidth=1,
                 row=1, col=1
             )
-            # Davies-Bouldin Score
             db_val = comparison_df.loc[comparison_df['Method'] == method, 'Davies-Bouldin Score (DB)'].values[0]
             y_pos_db = db_val + max_db * 0.03
             fig_compare.add_annotation(
@@ -1171,7 +1159,6 @@ def main():
                 borderwidth=1,
                 row=1, col=2
             )
-            # Calinski-Harabasz Score
             ch_val = comparison_df.loc[comparison_df['Method'] == method, 'Calinski-Harabasz Score (CH)'].values[0]
             y_pos_ch = ch_val + max_ch * 0.03
             fig_compare.add_annotation(
@@ -1188,15 +1175,11 @@ def main():
         
         fig_compare.update_layout(
             title="Clustering Method Comparison",
-            height=500,  # Increased height to accommodate labels and titles
+            height=500,
             template="plotly_white",
             showlegend=False,
-            margin=dict(t=100, b=60)  # Extra top margin for subplot titles
+            margin=dict(t=100, b=60)
         )
-        
-        fig_compare.update_yaxes(title_text="Score", row=1, col=1)
-        fig_compare.update_yaxes(title_text="Score", row=1, col=2)
-        fig_compare.update_yaxes(title_text="Score", row=1, col=3)
         fig_compare.update_xaxes(tickangle=0, row=1, col=1)
         fig_compare.update_xaxes(tickangle=0, row=1, col=2)
         fig_compare.update_xaxes(tickangle=0, row=1, col=3)
