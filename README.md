@@ -1,62 +1,60 @@
-# Final Project - Stock Clustering Analysis
+# 📈 Stock Clustering & Risk Intelligence Engine
+**Author:** Giang Tran
 
-## Project Description
-This project performs stock clustering analysis using machine learning techniques to group stocks based on their risk-return characteristics, momentum patterns, volatility, and technical indicators. The analysis helps investors identify groups of stocks with similar behavioral patterns for informed investment decision-making.
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://python-sql.streamlit.app/)
 
-The project includes:
-- Data fetching from Polygon.io API
-- Feature engineering with technical indicators
-- Multiple clustering methods (KMeans, PAM, Hierarchical)
-- Interactive Streamlit dashboard for visualization and analysis
+## 📌 Executive Summary
+This project performs an end-to-end stock clustering analysis using unsupervised machine learning. By extracting daily bars from the Polygon.io API, the engine engineers technical indicators and groups 50 major US stocks based on their actual risk-return characteristics, momentum patterns, and volatility, rather than traditional sector labels.
 
-## Dataset
-**Data Source**: https://kaggle.com/datasets/ae2daadecaecac15b060f3f6eff4cef6e866766d2759af7cdb2ebe8cdc791b9d
+**Business Value:** This tool helps quantitative investors and portfolio managers identify groups of stocks with similar behavioral characteristics. This allows for better portfolio diversification by highlighting hidden correlations and risk clusters that traditional sector-based allocations might miss.
 
-**Note**: 
-- Dataset is fetched directly from Polygon.io API and stored in a local SQLite database
-- The database file (`sql.db`) contains daily bars (open, high, low, close, volume) for 50 major US stocks
-- Data files are stored in the project root directory
+---
 
-## Setup
-- Python 3.10+ recommended
-- Install dependencies: `pip install -r requirements.txt`
-- Environment variables:
-  - `POLYGON_API_KEY` (required for fetching fresh data)
-  - Optional: `SQLITE_DB_PATH` (defaults to `sql.db`)
+## 📊 Key Visualizations & Insights
 
-## How to Run
+### 1. Rigorous Model Evaluation
+Instead of blindly applying a clustering algorithm, this project rigorously compares KMeans, PAM, and Hierarchical clustering. Using metrics like the Silhouette Score and Davies-Bouldin Index, the engine automatically identifies the most statistically sound groupings.
 
-### 1. Download the dataset in the Kaggle link above
+![Clustering Method Comparison](docs/images/clusteringMethodComparison.png) 
 
-### 2. Place the data files in the project folder, same directory with the streamlit.py file
+### 2. High-Dimensional Dimensionality Reduction (PCA)
+To process over 20 engineered technical indicators (RSI, ATR, Bollinger Bands, etc.), the pipeline utilizes Principal Component Analysis (PCA) to capture ~70% of the variance in 3 components. This allows for clear, 3D visualization of the stock clusters.
 
-### 3. Download all the dependencies
+![3D PCA Visualization](docs/images/pcaPlot.png)
+
+### 3. Behavioral "DNA" Heatmaps
+The Standardized Cluster Means Heatmap translates the machine learning output into actionable financial insights, allowing users to instantly see which cluster represents "High Volatility/High Return" versus "Steady Momentum."
+
+![Standardized Cluster Means Heatmap](docs/images/clusteringHeatmap.png)
+
+---
+
+## 🛠️ Technical Architecture & File Map
+
+* **Language & Libraries:** Python 3.10+, Pandas, Scikit-Learn, SciPy, NumPy
+* **Visualization:** Streamlit, Plotly, Seaborn
+* **Database & API:** SQLite, Polygon.io
+
+**Repository Structure:**
+* `fetch_data.py` — Fetches Polygon daily bars and stores them in a local SQLite database.
+* `features.py` — Builds the feature set from daily bars (computes technical indicators and aggregated metrics).
+* `streamlit.py` — The interactive dashboard for clustering analysis and visualization.
+* `symbols.py` — List of the 50 major US stock tickers to fetch.
+* `polygon_client.py` — Custom Polygon.io API client wrapper.
+* `db.py` — Database schema and operations.
+* `requirements.txt` — Python dependencies (optimized for deployment).
+* `sql.db` — SQLite database generated post-extraction.
+
+---
+
+## ⚙️ Dataset & Local Setup
+
+**Data Source:** The live dataset is fetched directly from the Polygon.io API.
+
+### How to Run Locally
+
+**1. Clone the repository and set up the environment:**
 ```bash
+git clone [https://github.com/giangphuongtran/python-sql.git](https://github.com/giangphuongtran/python-sql.git)
+cd python-sql
 pip install -r requirements.txt
-```
-
-### 4. Run Streamlit Dashboard
-```bash
-streamlit run streamlit.py
-```
-- Input: SQLite database path (default: `sql.db`)
-- Features:
-  - Dataset overview and feature exploration
-  - Correlation matrix and PCA analysis
-  - Multiple clustering methods (KMeans, PAM, Hierarchical)
-  - Cluster visualization with PCA
-  - Standardized cluster means heatmap
-  - Radar charts for cluster profiles
-  - Silhouette analysis
-  - Comparison of all clustering methods
-  - Interactive candlestick charts with technical indicators
-
-## File Map
-- `fetch_data.py` — Fetch Polygon daily bars and store in SQLite
-- `features.py` — Build feature set from `daily_bars` (technical indicators and aggregated metrics)
-- `streamlit.py` — Interactive dashboard for clustering analysis and visualization
-- `symbols.py` — List of stock tickers to fetch
-- `polygon_client.py` — Polygon.io API client
-- `db.py` — Database schema and operations
-- `requirements.txt` — Python dependencies
-- `sql.db` — SQLite database (created after running fetch_data.py)
