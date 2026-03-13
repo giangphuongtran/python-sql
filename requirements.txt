@@ -8,3 +8,4 @@ plotly>=5.10.0
 streamlit>=1.25.0
 polygon-api-client>=1.0.0
 psycopg2-binary>=2.9.0
+scikit-learn-extra
