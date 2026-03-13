@@ -55,6 +55,6 @@ The Standardized Cluster Means Heatmap translates the machine learning output in
 
 **1. Clone the repository and set up the environment:**
 ```bash
-git clone [https://github.com/giangphuongtran/python-sql.git](https://github.com/giangphuongtran/python-sql.git)
+git clone https://github.com/giangphuongtran/python-sql.git
 cd python-sql
 pip install -r requirements.txt
