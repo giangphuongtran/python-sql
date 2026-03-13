@@ -15,17 +15,17 @@ This project performs an end-to-end stock clustering analysis using unsupervised
 ### 1. Rigorous Model Evaluation
 Instead of blindly applying a clustering algorithm, this project rigorously compares KMeans, PAM, and Hierarchical clustering. Using metrics like the Silhouette Score and Davies-Bouldin Index, the engine automatically identifies the most statistically sound groupings.
 
-![Clustering Method Comparison](docs/images/clusteringMethodComparison.png) 
+![Clustering Method Comparison](docs/clusteringMethodComparison.png) 
 
 ### 2. High-Dimensional Dimensionality Reduction (PCA)
 To process over 20 engineered technical indicators (RSI, ATR, Bollinger Bands, etc.), the pipeline utilizes Principal Component Analysis (PCA) to capture ~70% of the variance in 3 components. This allows for clear, 3D visualization of the stock clusters.
 
-![3D PCA Visualization](docs/images/pcaPlot.png)
+![3D PCA Visualization](docs/pcaPlot.png)
 
 ### 3. Behavioral "DNA" Heatmaps
 The Standardized Cluster Means Heatmap translates the machine learning output into actionable financial insights, allowing users to instantly see which cluster represents "High Volatility/High Return" versus "Steady Momentum."
 
-![Standardized Cluster Means Heatmap](docs/images/clusteringHeatmap.png)
+![Standardized Cluster Means Heatmap](docs/clusteringHeatmap.png)
 
 ---
 
@@ -49,7 +49,7 @@ The Standardized Cluster Means Heatmap translates the machine learning output in
 
 ## ⚙️ Dataset & Local Setup
 
-**Data Source:** The live dataset is fetched directly from the Polygon.io API.
+**Data Source:** The initial ticker list and base data parameters can be referenced from [Kaggle](https://kaggle.com/datasets/ae2daadecaecac15b060f3f6eff4cef6e866766d2759af7cdb2ebe8cdc791b9d). The live dataset is fetched directly from the Polygon.io API.
 
 ### How to Run Locally
 
